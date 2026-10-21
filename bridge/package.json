@@ -1,0 +1,7 @@
+{
+  "name": "hermes-paseo-executive-events",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@getpaseo/client": "0.12.0" }
+}

@@ -1,0 +1,32 @@
+name: paseo-executive
+version: 0.1.0
+description: Executive oversight of asynchronous Paseo coding workers across daemon hosts.
+author: Jon
+provides_tools:
+  - paseo_hosts
+  - paseo_spawn
+  - paseo_agents
+  - paseo_permissions
+  - paseo_decide_permission
+  - paseo_events
+  - paseo_subscribe
+provides_hooks:
+  - pre_tool_call
+  - pre_llm_call
+python_dependencies:
+  - fastapi>=0.115,<1
+config_schema:
+  hosts:
+    type: list
+    label: Paseo hosts
+    description: 'Daemons Hermes can manage. Each entry needs a unique id and either home (local), target: host:6767 (remote), or target: ssh://user@host (SSH). Optional label, enabled, and stream_url. Use [] to remove all hosts.'
+    default:
+      - id: local
+        label: Local Paseo
+        home: ~/.paseo
+        enabled: true
+  cli_path:
+    type: str
+    label: Paseo executable (advanced)
+    default: /Applications/Paseo.app/Contents/Resources/bin/paseo
+    description: Override only if Paseo is installed elsewhere. Leave empty to auto-detect.

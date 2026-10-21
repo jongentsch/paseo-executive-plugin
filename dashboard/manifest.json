@@ -1,0 +1,9 @@
+{
+  "name": "paseo-executive",
+  "label": "Paseo Executive",
+  "icon": "Network",
+  "version": "0.1.0",
+  "tab": {"path": "/paseo-executive", "position": "end"},
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}
