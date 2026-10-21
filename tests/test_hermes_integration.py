@@ -110,7 +110,7 @@ class HermesIntegration(unittest.TestCase):
                     listing=json.loads(skills_list(category='plugin'))
                     self.assertTrue(listing['success'])
                     names={entry['name'] for entry in listing['skills']}
-                    for name in ['orchestrate','permissions','review']:
+                    for name in ['hosts','monitoring','orchestrate','permissions','review']:
                         qualified='paseo-executive:'+name
                         self.assertIn(qualified,names)
                         viewed=json.loads(skill_view(qualified,preprocess=False))
@@ -120,6 +120,10 @@ class HermesIntegration(unittest.TestCase):
                     reference=json.loads(skill_view('paseo-executive:orchestrate',file_path='references/tool-recipes.json',preprocess=False))
                     self.assertTrue(reference['success'],reference)
                     self.assertTrue(json.loads(reference['content']))
+                    for name in ['hosts','monitoring']:
+                        resource=json.loads(skill_view('paseo-executive:'+name,file_path='references/tool-recipes.json',preprocess=False))
+                        self.assertTrue(resource['success'],resource)
+                        self.assertTrue(json.loads(resource['content']))
                     template=json.loads(skill_view('paseo-executive:permissions',file_path='templates/approval-request.md',preprocess=False))
                     self.assertTrue(template['success'],template)
                     traversal=json.loads(skill_view('paseo-executive:orchestrate',file_path='../permissions/SKILL.md',preprocess=False))

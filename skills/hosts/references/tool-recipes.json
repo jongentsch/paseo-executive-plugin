@@ -1,0 +1,12 @@
+[
+  {"tool":"paseo_hosts","arguments":{"action":"list"}},
+  {"tool":"paseo_hosts","arguments":{"action":"add","host_id":"local-extra","label":"Second local daemon","home":"/tmp/example-paseo-home"}},
+  {"tool":"paseo_hosts","arguments":{"action":"add","host_id":"remote","label":"Remote worker","target":"devbox.example.invalid:6767"}},
+  {"tool":"paseo_hosts","arguments":{"action":"add","host_id":"ssh-worker","target":"ssh://user@devbox.example.invalid"}},
+  {"tool":"paseo_hosts","arguments":{"action":"update","host_id":"remote","stream_url":"wss://devbox.example.invalid/ws","password_env":"PASEO_DEVBOX_PASSWORD"}},
+  {"tool":"paseo_hosts","arguments":{"action":"probe","host_id":"remote"}},
+  {"tool":"paseo_hosts","arguments":{"action":"update","host_id":"remote","label":"Remote build worker"}},
+  {"tool":"paseo_hosts","arguments":{"action":"update","host_id":"remote","enabled":false}},
+  {"tool":"paseo_hosts","arguments":{"action":"update","host_id":"remote","enabled":true}},
+  {"tool":"paseo_hosts","arguments":{"action":"remove","host_id":"local-extra"}}
+]

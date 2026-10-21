@@ -11,6 +11,8 @@ Use the plugin's `paseo_*` tools. This bundle adapts the user's existing Paseo e
 
 ## Select the host and scope
 
+For host setup or connection troubleshooting, load `paseo-executive:hosts`.
+
 Use `paseo_hosts` with `action: list` to resolve the intended host ID. Local, remote, and SSH hosts share the same tools; `cwd` always belongs to the selected host. A project path on this computer does not identify a checkout on another machine. Use the user's named host or an established task-to-host mapping; ask if the execution destination remains ambiguous. Do not silently move work to another host after a connection failure.
 
 Probe a new or failing host with `paseo_hosts` using `action: probe`. Changing host configuration is separate from assigning work: add or edit hosts only when that is part of the user's request. Use the user's provider choice when supplied. Avoid hardcoded model versions or unsupported thinking/mode arguments.
@@ -19,7 +21,7 @@ Probe a new or failing host with `paseo_hosts` using `action: probe`. Changing h
 
 Use [templates/worker-brief.md](templates/worker-brief.md) for a bounded assignment. Call `paseo_spawn` with `host_id`, `cwd`, `prompt`, and an optional `provider` and `title`. Spawning returns immediately; record the actual full agent ID and host ID before moving on. Do not busy-wait or run a long polling loop unless the user asked for active monitoring.
 
-Start or inspect event monitoring with `paseo_subscribe`. Completion, failure, and permission events are durable; use `paseo_events` for catch-up, carrying forward its returned `next_cursor`. Reading events does not acknowledge notification delivery. Filter events by the workers in the task ledger before interpreting them as this task's outcome.
+For capture, catch-up, or notification delivery issues, load `paseo-executive:monitoring`. Start or inspect event monitoring with `paseo_subscribe`. Completion, failure, and permission events are durable; use `paseo_events` for catch-up, carrying forward its returned `next_cursor`. Reading events does not acknowledge notification delivery. Filter events by the workers in the task ledger before interpreting them as this task's outcome.
 
 Give a brief dispatch acknowledgement identifying the host, worker, and goal. Continue independent work or return control to the user. A background task can outlive this conversation. Automatic proactive notification needs a live authorized Hermes delivery route; do not promise delivery to an unspecified chat. If delivery is unavailable, retain the pending events and surface them on the next interaction.
 

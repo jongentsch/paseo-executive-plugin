@@ -31,3 +31,11 @@ Remote and SSH transport command routing are implemented; no additional remote h
 - Skill recipe tests execute every example against a fake daemon and check the current tool schemas.
 - Isolated Hermes integration verifies discovery descriptions, qualified skill loading, linked references/templates, rejection of cross-skill path traversal, and coexistence with an unchanged personal `paseo-executive` skill.
 - The existing user skill was read as inspiration only. No skill files outside this repository were modified and no live Hermes reload or UI automation was performed.
+
+## Host and monitoring skills
+
+- Added `paseo-executive:hosts` and `paseo-executive:monitoring`, bringing the native bundle to five skills.
+- Host guidance covers connection types, secrets versus values, exact destination identity, partial updates, pause/removal semantics, and bounded troubleshooting.
+- Monitoring guidance distinguishes capture from delivery, event IDs from permission request IDs, accepted injection from a completed reply, and observation pauses from worker interruption. It documents cursor recovery, duplicate notifications, and polling/downtime limits.
+- All five skills passed the skill-creator validator with Hermes' YAML parser. All 29 Python tests passed, including every tool recipe executed against fake daemons and native discovery/reference loading of both new skills.
+- Validation used temporary Hermes homes. No existing Hermes configuration, personal skills, daemon workers, or app UI were changed.

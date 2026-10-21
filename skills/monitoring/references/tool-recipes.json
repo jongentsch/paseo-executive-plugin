@@ -1,0 +1,12 @@
+[
+  {"tool":"paseo_subscribe","arguments":{"action":"status"}},
+  {"tool":"paseo_hosts","arguments":{"action":"list"}},
+  {"tool":"paseo_subscribe","arguments":{"action":"start"}},
+  {"tool":"paseo_events","arguments":{"after":0,"limit":50}},
+  {"tool":"paseo_events","arguments":{"after":0,"limit":50,"unread":true}},
+  {"tool":"paseo_agents","arguments":{"action":"inspect","host_id":"linux","agent_id":"ACTUAL_FULL_AGENT_ID"}},
+  {"tool":"paseo_permissions","arguments":{"host_id":"linux"}},
+  {"tool":"paseo_subscribe","arguments":{"action":"start","notification_session_key":"ACTUAL_AUTHORIZED_DURABLE_SESSION_KEY"}},
+  {"tool":"paseo_subscribe","arguments":{"action":"stop"}},
+  {"tool":"paseo_subscribe","arguments":{"action":"start"}}
+]

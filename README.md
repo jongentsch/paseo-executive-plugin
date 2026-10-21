@@ -69,15 +69,17 @@ SSH uses Paseo's SSH transport and the user's existing SSH configuration. No she
 
 ## Bundled skills
 
-The plugin registers three read-only Hermes skills through the native `ctx.register_skill()` API:
+The plugin registers five read-only Hermes skills through the native `ctx.register_skill()` API:
 
 | Qualified skill | Purpose |
 | --- | --- |
+| `paseo-executive:hosts` | Configure and troubleshoot local, remote, and SSH hosts; safely edit/remove destinations and pause individual monitors |
+| `paseo-executive:monitoring` | Observe events, recover cursors, diagnose capture versus delivery, and handle duplicate/pending notifications |
 | `paseo-executive:orchestrate` | Delegate asynchronously across hosts, maintain task identity, coordinate workers, and recover without duplicate launches |
 | `paseo-executive:permissions` | Present a precise request and apply the user's host/agent/request-specific decision |
 | `paseo-executive:review` | Assess evidence, coordinate follow-ups or independent review, and report verified outcomes |
 
-Discover them with `skills_list(category="plugin")` and load one with `skill_view("paseo-executive:orchestrate")`. The orchestration skill includes tool-call recipes and a worker-brief template; permissions and review include their own decision/review templates. Read a linked resource through the same qualified skill, for example `skill_view("paseo-executive:orchestrate", file_path="references/tool-recipes.json")`.
+Discover them with `skills_list(category="plugin")` and load one with `skill_view("paseo-executive:orchestrate")`. The host, monitoring, and orchestration skills include tool-call recipes; orchestration also has a worker-brief template; permissions and review include their own decision/review templates. Read a linked resource through the same qualified skill, for example `skill_view("paseo-executive:orchestrate", file_path="references/tool-recipes.json")`.
 
 These are inspired by the user's existing personal `paseo-executive` skill: async delegation, task ledgers, isolated writers, exact permission decisions, and evidence-based review. The bundle uses the plugin's actual tools, makes unsupported workspace/log operations explicit, and does not pin provider model versions or repeat obsolete CLI flags.
 
@@ -147,7 +149,7 @@ The first worker only replies to a no-tools prompt; it verifies SDK subscription
 
 ```text
 plugin.yaml                  Hermes metadata, tools, hooks, settings form
-skills/                      Namespaced orchestration, permission, and review guidance
+skills/                      Namespaced host, monitoring, orchestration, permission, and review guidance
 __init__.py                  Native plugin registration
 paseo_executive/core.py       Host/worker/permission service and durable storage
 paseo_executive/runtime.py    Background subscriptions, reconciliation, delivery
