@@ -67,6 +67,22 @@ Example arguments for `paseo_hosts`:
 
 SSH uses Paseo's SSH transport and the user's existing SSH configuration. No shell command strings or interpolated remote commands are constructed by the plugin. Remote paths belong to the selected daemon host. Removing a host disconnects monitoring; its workers continue running. Existing worker and event records remain available for audit.
 
+## Bundled skills
+
+The plugin registers three read-only Hermes skills through the native `ctx.register_skill()` API:
+
+| Qualified skill | Purpose |
+| --- | --- |
+| `paseo-executive:orchestrate` | Delegate asynchronously across hosts, maintain task identity, coordinate workers, and recover without duplicate launches |
+| `paseo-executive:permissions` | Present a precise request and apply the user's host/agent/request-specific decision |
+| `paseo-executive:review` | Assess evidence, coordinate follow-ups or independent review, and report verified outcomes |
+
+Discover them with `skills_list(category="plugin")` and load one with `skill_view("paseo-executive:orchestrate")`. The orchestration skill includes tool-call recipes and a worker-brief template; permissions and review include their own decision/review templates. Read a linked resource through the same qualified skill, for example `skill_view("paseo-executive:orchestrate", file_path="references/tool-recipes.json")`.
+
+These are inspired by the user's existing personal `paseo-executive` skill: async delegation, task ledgers, isolated writers, exact permission decisions, and evidence-based review. The bundle uses the plugin's actual tools, makes unsupported workspace/log operations explicit, and does not pin provider model versions or repeat obsolete CLI flags.
+
+Namespacing keeps the existing bare `paseo-executive` skill separate. Plugin skills stay in this repository; registration does not copy into or replace the user's skill tree. They are available when the plugin is enabled and follow its normal load/unload lifecycle. This update does not change an existing Hermes session or reload its plugins.
+
 ## Events and notifications
 
 Monitoring starts lazily on the first tool call, Hermes turn, or dashboard request and continues in the host process until paused or unloaded. The default host is the local `~/.paseo` daemon.
@@ -131,6 +147,7 @@ The first worker only replies to a no-tools prompt; it verifies SDK subscription
 
 ```text
 plugin.yaml                  Hermes metadata, tools, hooks, settings form
+skills/                      Namespaced orchestration, permission, and review guidance
 __init__.py                  Native plugin registration
 paseo_executive/core.py       Host/worker/permission service and durable storage
 paseo_executive/runtime.py    Background subscriptions, reconciliation, delivery

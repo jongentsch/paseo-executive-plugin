@@ -22,3 +22,12 @@ Remote and SSH transport command routing are implemented; no additional remote h
 - Four dependency-free JavaScript behavior tests exercise local/remote/SSH forms, editing, probes, pause/remove, and both Settings-page registration paths.
 - Late snapshots from a changed connection are rejected. Audit-only records cannot block delivery of later completion, failure, or permission notifications.
 - Notification session keys were removed from the normal settings form; legacy advanced routing remains supported.
+
+## Bundled skills revision
+
+29 Python tests and 4 JavaScript tests passed, along with skill-creator frontmatter validation using Hermes’ YAML parser, isolated Plugin Doctor, and every standard plugin validation check.
+
+- Three native namespaced skills are registered from the package: orchestrate, permissions, and review, with task, permission, and review templates plus executable tool-call examples for isolated tests.
+- Skill recipe tests execute every example against a fake daemon and check the current tool schemas.
+- Isolated Hermes integration verifies discovery descriptions, qualified skill loading, linked references/templates, rejection of cross-skill path traversal, and coexistence with an unchanged personal `paseo-executive` skill.
+- The existing user skill was read as inspiration only. No skill files outside this repository were modified and no live Hermes reload or UI automation was performed.

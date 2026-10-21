@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from .core import ExecutiveError, event_message, required
 from .runtime import bind_context, get_runtime
+from .skills import register_skills
 
 S = {"type": "string"}
 
@@ -100,6 +101,7 @@ def execute(runtime, name, args):
 
 
 def register(ctx):
+    register_skills(ctx)
     owned = {}
     ctx.on_unload(bind_context(ctx))
 

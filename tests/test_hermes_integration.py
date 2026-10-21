@@ -91,3 +91,43 @@ class HermesIntegration(unittest.TestCase):
             finally:
                 if unbind: unbind()
                 reset_hermes_home_override(token)
+
+    def test_plugin_skills_are_discoverable_and_preserve_personal_skill(self):
+        from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+        from paseo_executive.skills import register_skills
+        from tools.skills_tool import skill_view, skills_list
+        with tempfile.TemporaryDirectory() as directory:
+            token=set_hermes_home_override(directory)
+            try:
+                personal=Path(directory)/'skills/software-development/paseo-executive/SKILL.md'
+                personal.parent.mkdir(parents=True)
+                original='---\nname: paseo-executive\ndescription: Personal executive workflow\n---\nPersonal skill stays separate.\n'
+                personal.write_text(original)
+                manager=PluginManager(scope_key=directory)
+                context=PluginContext(PluginManifest(name='paseo-executive',source='user'),manager)
+                register_skills(context)
+                with patch('hermes_cli.plugins.get_plugin_manager',return_value=manager),patch('hermes_cli.plugins.discover_plugins'):
+                    listing=json.loads(skills_list(category='plugin'))
+                    self.assertTrue(listing['success'])
+                    names={entry['name'] for entry in listing['skills']}
+                    for name in ['orchestrate','permissions','review']:
+                        qualified='paseo-executive:'+name
+                        self.assertIn(qualified,names)
+                        viewed=json.loads(skill_view(qualified,preprocess=False))
+                        self.assertTrue(viewed['success'],viewed)
+                        self.assertEqual(viewed['name'],qualified)
+                        self.assertTrue(viewed['description'])
+                    reference=json.loads(skill_view('paseo-executive:orchestrate',file_path='references/tool-recipes.json',preprocess=False))
+                    self.assertTrue(reference['success'],reference)
+                    self.assertTrue(json.loads(reference['content']))
+                    template=json.loads(skill_view('paseo-executive:permissions',file_path='templates/approval-request.md',preprocess=False))
+                    self.assertTrue(template['success'],template)
+                    traversal=json.loads(skill_view('paseo-executive:orchestrate',file_path='../permissions/SKILL.md',preprocess=False))
+                    self.assertFalse(traversal['success'])
+                    bare=json.loads(skill_view('paseo-executive',preprocess=False))
+                    self.assertTrue(bare['success'],bare)
+                    self.assertIn('Personal skill stays separate.',bare['content'])
+                self.assertEqual(personal.read_text(),original)
+                self.assertFalse((Path(directory)/'skills/orchestrate').exists())
+            finally:
+                reset_hermes_home_override(token)

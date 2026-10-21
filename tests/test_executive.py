@@ -152,6 +152,7 @@ class Fixture(unittest.TestCase):
             def __init__(self): self.tools={}; self.hooks={}
             def register_tool(self,**kwargs): self.tools[kwargs['name']]=kwargs
             def register_hook(self,name,callback): self.hooks[name]=callback
+            def register_skill(self,name,path,**kwargs): pass
             def on_unload(self,callback): self.unload=callback
         ctx=Context()
         with patch('paseo_executive.tools.bind_context', return_value=lambda: None):
