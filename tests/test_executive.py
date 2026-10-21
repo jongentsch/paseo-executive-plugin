@@ -160,7 +160,7 @@ class Fixture(unittest.TestCase):
         directive=ctx.hooks['pre_tool_call']('paseo_decide_permission',{'decision':'allow'})
         self.assertEqual(directive['action'],'approve')
         self.assertIsNone(ctx.hooks['pre_tool_call']('paseo_hosts',{'action':'list'}))
-        self.assertEqual(len(ctx.tools),7)
+        self.assertEqual(len(ctx.tools),8)
 
 
 if __name__=='__main__':

@@ -35,6 +35,8 @@ class BundledSkillTests(unittest.TestCase):
                 if args[0]=='ls': return [{'id':'ACTUAL_FULL_AGENT_ID','status':'running'}]
                 if args[0] in {'run','inspect'}: return {'id':'ACTUAL_FULL_AGENT_ID','status':'running','pendingPermissions':[]}
                 return {'ok':True}
+            def activity(self,host,agent_id,tail):
+                return {'source':'paseo_cli_logs','text':'Worker-reported completion','scope':'recent_activity'}
         with tempfile.TemporaryDirectory() as directory:
             store=Store(directory)
             store.save_host({'id':'linux','target':'ssh://user@example.invalid'})

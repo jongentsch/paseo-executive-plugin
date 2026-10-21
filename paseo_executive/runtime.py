@@ -29,6 +29,7 @@ class Runtime:
     def __init__(self, store, cli=None):
         self.store = store
         self.executive = Executive(store, cli)
+        self.executive.activity_reader = self.read_activity
         self.owner = str(uuid.uuid4())
         self.stop_event = threading.Event()
         self.workers = {}
@@ -136,6 +137,31 @@ class Runtime:
             password = get_secret(host["password_env"])
         return dict(url=url, home=host.get("home"), password=password)
 
+    def read_activity(self, host, snapshot, tail=20, turn_id=None):
+        bridge = Path(__file__).resolve().parent.parent / "bridge" / "details.mjs"
+        node = shutil.which("node")
+        installed = (bridge.parent / "node_modules" / "@getpaseo" / "client").exists()
+        reason = None
+        if node and installed:
+            try:
+                config = self.stream_config(host)
+                if config:
+                    config.update(agent_id=snapshot["id"], tail=tail, turn_id=turn_id, updated_at=snapshot.get("updatedAt"))
+                    completed = subprocess.run([node, str(bridge)], input=json.dumps(config) + "\n",
+                                               capture_output=True, text=True, timeout=8)
+                    activity = json.loads(completed.stdout)
+                    if activity.get("scope") == "newer_snapshot":
+                        return activity
+                    if completed.returncode or activity.get("error"):
+                        raise ExecutiveError(activity.get("error") or "SDK activity lookup failed")
+                    return activity
+            except Exception as exc:
+                reason = str(exc)[:500]
+        activity = self.executive.cli.activity(host, snapshot["id"], tail)
+        if reason:
+            activity["fallback_reason"] = reason
+        return activity
+
     def watch_host(self, host):
         host_id = host["id"]
         delay = 2
@@ -218,7 +244,7 @@ class Runtime:
                 frame = json.loads(line)
                 heartbeat_deadline = time.monotonic() + 40
                 if frame.get("type") == "snapshot":
-                    self.store.observe(host["id"], frame["agent"], expected_host=host)
+                    self.store.observe(host["id"], frame["agent"], expected_host=host, source="sdk")
                 elif frame.get("type") == "error":
                     raise ExecutiveError(frame["message"])
                 elif frame.get("type") == "ready":

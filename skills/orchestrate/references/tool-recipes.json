@@ -1,10 +1,69 @@
 [
-  {"tool":"paseo_hosts","arguments":{"action":"list"}},
-  {"tool":"paseo_hosts","arguments":{"action":"probe","host_id":"linux"}},
-  {"tool":"paseo_spawn","arguments":{"host_id":"linux","cwd":"/srv/project","provider":"codex","title":"Fix login redirect","prompt":"Reproduce the login redirect bug, implement a scoped fix, run the relevant tests, and report changed files, test evidence, and blockers. Follow the repository instructions and preserve unrelated work."}},
-  {"tool":"paseo_subscribe","arguments":{"action":"start"}},
-  {"tool":"paseo_agents","arguments":{"action":"inspect","host_id":"linux","agent_id":"ACTUAL_FULL_AGENT_ID"}},
-  {"tool":"paseo_permissions","arguments":{"host_id":"linux"}},
-  {"tool":"paseo_events","arguments":{"after":0,"limit":50}},
-  {"tool":"paseo_agents","arguments":{"action":"send","host_id":"linux","agent_id":"ACTUAL_FULL_AGENT_ID","prompt":"Address the reproduced failure from review within the existing scope. Report the exact check and outcome."}}
+  {
+    "tool": "paseo_hosts",
+    "arguments": {
+      "action": "list"
+    }
+  },
+  {
+    "tool": "paseo_hosts",
+    "arguments": {
+      "action": "probe",
+      "host_id": "linux"
+    }
+  },
+  {
+    "tool": "paseo_spawn",
+    "arguments": {
+      "host_id": "linux",
+      "cwd": "/srv/project",
+      "provider": "codex",
+      "title": "Fix login redirect",
+      "prompt": "Reproduce the login redirect bug, implement a scoped fix, run the relevant tests, and report changed files, test evidence, and blockers. Follow the repository instructions and preserve unrelated work."
+    }
+  },
+  {
+    "tool": "paseo_subscribe",
+    "arguments": {
+      "action": "start"
+    }
+  },
+  {
+    "tool": "paseo_agents",
+    "arguments": {
+      "action": "inspect",
+      "host_id": "linux",
+      "agent_id": "ACTUAL_FULL_AGENT_ID"
+    }
+  },
+  {
+    "tool": "paseo_permissions",
+    "arguments": {
+      "host_id": "linux"
+    }
+  },
+  {
+    "tool": "paseo_events",
+    "arguments": {
+      "after": 0,
+      "limit": 50
+    }
+  },
+  {
+    "tool": "paseo_agents",
+    "arguments": {
+      "action": "send",
+      "host_id": "linux",
+      "agent_id": "ACTUAL_FULL_AGENT_ID",
+      "prompt": "Address the reproduced failure from review within the existing scope. Report the exact check and outcome."
+    }
+  },
+  {
+    "tool": "paseo_worker_details",
+    "arguments": {
+      "host_id": "linux",
+      "agent_id": "ACTUAL_FULL_AGENT_ID",
+      "tail": 20
+    }
+  }
 ]

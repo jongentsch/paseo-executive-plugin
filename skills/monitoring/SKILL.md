@@ -29,6 +29,8 @@ Event rows use `host` and `agent`; pass these as tool arguments `host_id` and `a
 | `permission` | A request needs attention; it is not authorization to approve. |
 | `permission_resolved` | A permission decision was recorded; it does not establish task completion. |
 
+Events include captured `context`, an available bounded `result`, and a `follow_up` reference to `paseo_worker_details`. The context records assignment, worker, timing, and observation provenance. Worker reports and extracted evidence are not verified. Use the follow-up reference when more detail is needed; its event ID keeps the captured event separate from newer worker state.
+
 Read current worker state on the same host when event history is incomplete. Never repeat a spawn, send, or permission decision just to regenerate a missing notification.
 
 ## Distinguish capture from delivery

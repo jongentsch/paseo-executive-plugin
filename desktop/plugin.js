@@ -119,6 +119,7 @@ function Panel({data, error, act, busy}) {
     h('section',{style:card},h('h3',null,'Recent activity'),
       ...events.slice().reverse().slice(0,30).map(e=>h('div',{key:e.id,style:{padding:'8px 0',fontSize:12}},
         h('strong',null,`${e.kind} · ${e.host}`),h('span',{style:{opacity:.65}},` · ${e.agent||''} · ${new Date(e.created*1000).toLocaleString()} · ${e.delivered?'sent to Hermes':'in outbox'}`),
+        h('div',null,e.context?.worker?.name||'',e.result?.summary?h('p',null,(e.result.attribution==='worker_reported'?'Worker report (unverified): ':'Recent activity: ')+e.result.summary):null),
         h('pre',{style:{whiteSpace:'pre-wrap',wordBreak:'break-word'}},JSON.stringify(e.data))))));
 }
 
@@ -141,7 +142,10 @@ export default {
       queryClient.invalidateQueries({queryKey:['paseo-executive','state']});
       if(seen.has(payload.id))return;seen.add(payload.id);
       const title=`Paseo ${payload.kind}`;
-      const message=`${payload.host} / ${payload.agent}`;
+      const worker=payload.context?.worker?.name||payload.agent;
+      const summary=payload.result?.summary;
+      const label=payload.result?.attribution==='worker_reported'?'Worker report':'Recent activity';
+      const message=`${payload.host} / ${worker}`+(summary?` — ${label}: ${summary.slice(0,180)}`:'');
       host.notify({kind:payload.kind==='failed'?'error':'info',title,message});
       ctx.os.notify({title,body:message});
     }));

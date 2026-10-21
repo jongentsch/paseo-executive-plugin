@@ -1,32 +1,17 @@
 // A small JSONL boundary keeps the Hermes plugin Python-native while using
 // Paseo's supported SDK for owned/reconnecting daemon event subscriptions.
 import { createInterface } from 'node:readline';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { createPaseoClient } from '@getpaseo/client';
+import {configuredClient} from './connection.mjs';
+import {snapshotEmitter} from './activity.mjs';
 
 const output = frame => process.stdout.write(JSON.stringify(frame) + '\n');
 const input = createInterface({ input: process.stdin });
 const config = JSON.parse(await new Promise(resolve => input.once('line', resolve)));
 input.close();
-let authHeader;
-if (config.home) {
-  try {
-    const credential = (await readFile(join(config.home, 'local-credential'), 'utf8')).trim();
-    authHeader = `Bearer ${credential}`;
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
-}
-const client = createPaseoClient({
-  url: config.url, authHeader,
-  password: config.password || undefined,
-  clientId: `hermes-executive-${process.pid}`,
-  connectTimeoutMs: 15000,
-  reconnect: { enabled: true, baseDelayMs: 1000, maxDelayMs: 15000 }
-});
+const client = await configuredClient(config);
+const snapshot = snapshotEmitter(client,output);
+
 const heartbeat = setInterval(() => output({type: 'heartbeat'}), 10000);
-const snapshot = agent => { if (agent?.id) output({type: 'snapshot', agent}); };
 const listSubscriptions = [];
 let eventSubscription;
 try {

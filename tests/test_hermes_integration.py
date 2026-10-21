@@ -135,3 +135,26 @@ class HermesIntegration(unittest.TestCase):
                 self.assertFalse((Path(directory)/'skills/orchestrate').exists())
             finally:
                 reset_hermes_home_override(token)
+
+    def test_read_only_worker_details_http_route(self):
+        from paseo_executive import api
+        from paseo_executive.core import Store
+        from paseo_executive.runtime import Runtime
+        class CLI:
+            def call(self,host,*args):
+                if args[0]!='inspect': raise AssertionError('Details must be read-only')
+                return {'Id':'worker','Status':'idle','Name':'Example worker','UpdatedAt':'v1'}
+        with tempfile.TemporaryDirectory() as directory:
+            runtime=Runtime(Store(directory),CLI())
+            runtime.executive.activity_reader=lambda *args:{'source':'paseo_sdk_timeline','scope':'recent_activity','entries':[{
+                'type':'assistant_message','text':'Reported test passed'}]}
+            app=FastAPI();app.include_router(api.router)
+            with patch.object(api,'get_runtime',return_value=runtime),TestClient(app) as client:
+                response=client.get('/workers/local/worker/details?tail=10')
+                self.assertEqual(response.status_code,200)
+                body=response.json()
+                self.assertEqual(body['result']['verification'],'not_verified')
+                self.assertEqual(body['result']['summary'],'Reported test passed')
+                self.assertEqual(body['snapshot']['name'],'Example worker')
+                self.assertEqual(client.get('/workers/local/worker/details?tail=51').status_code,400)
+                self.assertEqual(runtime.store.events(),[])

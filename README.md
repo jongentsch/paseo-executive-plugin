@@ -33,13 +33,14 @@ The native Python settings form provides a **Paseo hosts** JSON list as well, so
 
 > Add my SSH host ssh://jon@linux-worker, then delegate the failing tests in /srv/project to a Codex worker there. Tell me when it finishes and bring me any permission requests.
 
-The seven tools are:
+The eight tools are:
 
 | Tool | Purpose |
 | --- | --- |
 | `paseo_hosts` | List, add, update, remove, or probe daemon hosts |
 | `paseo_spawn` | Start a worker asynchronously with a prompt, host, provider, and host-side working directory |
 | `paseo_agents` | List, inspect, send a task to, or interrupt workers |
+| `paseo_worker_details` | Read fresh worker state, bounded activity/response, and unverified reported evidence; optionally compare with a captured event |
 | `paseo_permissions` | Retrieve exact pending requests |
 | `paseo_decide_permission` | Apply an explicit allow/deny decision to one request |
 | `paseo_events` | Read the durable event stream using an integer cursor |
@@ -95,9 +96,11 @@ For a remote host, optionally set `stream_url` (for example `wss://worker.exampl
 
 Snapshots, host configuration, events, cursors, and delivery leases live in the active profile's `plugin-data/paseo-executive/executive.sqlite3`, outside the install tree. The database is created with user-only permissions. Concurrent Hermes/dashboard processes coordinate host monitors and outbox delivery through SQLite leases.
 
+Contextual notifications include the known assignment, worker/provider/host/directory, available workspace/branch, turn timing, and observation provenance. A bounded worker response or activity excerpt is included when available; structured test/file/artifact claims remain explicitly unverified. Each event links to the read-only `paseo_worker_details` tool for targeted follow-up. Captured context stays separate from newer worker state. See [Event payloads and read-only details](docs/eventing.md) for the full contract and transport limits.
+
 Events include `completed` (running → idle), `failed` (error status or changed last error), and `permission` (a new exact request ID). The first idle snapshot creates a baseline, not a spurious completion notification. `spawned` and `permission_resolved` provide audit records. Repeated identical snapshots do not duplicate events; separate turns can complete repeatedly.
 
-Hermes receives events through public `ctx.emit`, `broadcast_plugin_event`, and `ctx.inject_message`. The desktop half shows toast and OS notifications. The model receives event data marked as untrusted worker content and is instructed to notify the user. In CLI sessions, injection routes to the attached conversation automatically.
+Hermes receives events through public `ctx.emit`, `broadcast_plugin_event`, and `ctx.inject_message`. The desktop half shows toast and OS notifications. The model receives contextual event data marked as untrusted, unverified worker content and is instructed to notify the user. In CLI sessions, injection routes to the attached conversation automatically.
 
 Desktop/TUI and messaging sessions need a **durable Hermes session key** plus this existing Hermes grant in the owning profile's `config.yaml`:
 
@@ -159,6 +162,7 @@ dashboard/plugin_api.py      Dashboard backend entrypoint
 dashboard/dist/index.js      Prebuilt dashboard UI
 desktop/plugin.js            Native host settings, worker pane, notifications
 frontend/hosts.js            Shared connection-type-aware host editor
-bridge/watch.mjs             Supported Paseo SDK subscription → JSONL
+bridge/details.mjs           Bounded read-only SDK timeline lookup
+bridge/watch.mjs             Supported Paseo SDK subscription → contextual snapshot JSONL
 scripts/install.sh           Reproducible SDK installation and linked deployment
 ```

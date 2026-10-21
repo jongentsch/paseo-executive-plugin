@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 class Action(BaseModel):
-    name: Literal["paseo_hosts", "paseo_spawn", "paseo_agents", "paseo_permissions", "paseo_decide_permission", "paseo_events", "paseo_subscribe"]
+    name: Literal["paseo_hosts", "paseo_spawn", "paseo_agents", "paseo_worker_details", "paseo_permissions", "paseo_decide_permission", "paseo_events", "paseo_subscribe"]
     args: dict = Field(default_factory=dict)
     user_confirmed: bool = False
 
@@ -48,3 +48,11 @@ def action(body: Action):
 def events(after: int = 0, limit: int = 100):
     result = get_runtime().store.events(after=after, limit=limit)
     return {"events": result, "next_cursor": result[-1]["id"] if result else after}
+
+
+@router.get("/workers/{host_id}/{agent_id}/details")
+def worker_details(host_id: str, agent_id: str, tail: int = 20, event_id: int | None = None):
+    try:
+        return get_runtime().executive.details(host_id, agent_id, tail=tail, event_id=event_id)
+    except (ExecutiveError, ValueError, TypeError) as exc:
+        raise HTTPException(400, str(exc)) from exc

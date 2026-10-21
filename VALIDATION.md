@@ -39,3 +39,13 @@ Remote and SSH transport command routing are implemented; no additional remote h
 - Monitoring guidance distinguishes capture from delivery, event IDs from permission request IDs, accepted injection from a completed reply, and observation pauses from worker interruption. It documents cursor recovery, duplicate notifications, and polling/downtime limits.
 - All five skills passed the skill-creator validator with Hermes' YAML parser. All 29 Python tests passed, including every tool recipe executed against fake daemons and native discovery/reference loading of both new skills.
 - Validation used temporary Hermes homes. No existing Hermes configuration, personal skills, daemon workers, or app UI were changed.
+
+## Contextual eventing and read-only details
+
+47 Python tests and 10 JavaScript tests passed, along with all skill validations, Plugin Doctor, and standard plugin validation.
+
+- Added schema-versioned captured context, bounded worker-reported summaries/evidence, observation/timing provenance, and exact follow-up references without changing legacy kind-specific `data`.
+- Added `paseo_worker_details` and its authenticated GET route. Tests prove it only inspects/reads activity, preserves event identity, rejects repointed hosts, and distinguishes newer/uncertain state from the original event.
+- SDK projection tests cover turn-filtered responses, omission of reasoning and raw tool input/output, size bounds, ordered rapid-turn observation, and terminal events retained on lookup failure.
+- Python tests cover additive database migration, assignment capture, snapshot immutability, raw permission preservation, bounded valid JSON messages, unavailable activity, plain-text CLI attribution, follow-up full IDs, and partial refresh failures.
+- Updated notification text and orchestration/review/monitoring skills. Validation used temporary Hermes homes and fake daemon/SDK responses; no live Hermes UI, configuration, workers, or daemon connections were used.

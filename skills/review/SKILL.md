@@ -13,7 +13,9 @@ Recover the assignment's host ID, full agent ID, directory, acceptance criteria,
 
 Compare available artifacts with the assigned outcome and authorized scope. Check actual changed paths, diffs, and test commands/results when accessible. Inspect uncommitted state as well as commits: checking out a branch at HEAD does not capture a worker's dirty working tree. Preserve unrelated edits and partial evidence.
 
-The plugin exposes lifecycle/permission state; it does not fetch repository diffs, full timelines, or test logs. Obtain evidence from accessible artifacts through authorized repository tools or request a scoped worker report. If evidence on a remote host cannot be inspected, report that limitation and leave verification pending. Do not claim that `paseo_agents inspect` supplied test output it does not contain.
+Use `paseo_worker_details` with the same host and full agent ID for fresh state, a bounded recent activity window, and an available worker response. Pass an event's `event_id` when following up on a notification; compare its captured context with `event_correlation` and the current snapshot. A newer snapshot or failed freshness check must not be presented as the result of the older event.
+
+Event summaries and extracted test/file/artifact claims are explicitly unverified worker reports. Structured SDK responses preserve their source and turn correlation; CLI fallback may supply unclassified recent activity instead of a final assistant response. The plugin does not fetch repository diffs, independently run tests, or read every referenced artifact. Obtain that evidence through authorized repository tools when available. If evidence on a remote host cannot be inspected, report the limitation and leave verification pending. Do not claim that `paseo_agents inspect` supplied test output it does not contain.
 
 ## Follow up or independently verify
 

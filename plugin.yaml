@@ -6,6 +6,7 @@ provides_tools:
   - paseo_hosts
   - paseo_spawn
   - paseo_agents
+  - paseo_worker_details
   - paseo_permissions
   - paseo_decide_permission
   - paseo_events

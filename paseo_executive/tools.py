@@ -23,6 +23,9 @@ TOOLS = [
     definition("paseo_agents", "List, inspect, send a follow-up task, or interrupt a worker on a specific Paseo host.",
                {"action": {"type": "string", "enum": ["list", "inspect", "send", "stop"]}, "host_id": S,
                 "agent_id": S, "prompt": S}, ["action", "host_id"]),
+    definition("paseo_worker_details", "Read fresh worker state and bounded recent activity or assistant response. Includes assignment context and unverified worker-reported evidence. Optional event_id compares current state with the captured event; this never sends tasks or permission decisions.",
+               {"host_id": S, "agent_id": S, "event_id": {"type": "integer", "minimum": 1},
+                "tail": {"type": "integer", "minimum": 1, "maximum": 50}}, ["host_id", "agent_id"]),
     definition("paseo_permissions", "Read exact pending permission requests from a Paseo host. Present the full request to the user before making any decision.",
                {"host_id": S}, ["host_id"]),
     definition("paseo_decide_permission", "Apply the user's explicit allow/deny decision to ONE pending permission. Requires a full agent ID and exact request ID; human approval is requested by the plugin hook.",
@@ -78,7 +81,9 @@ def execute(runtime, name, args):
         if action == "stop":
             return executive.cli.call(store.host(host_id), "stop", agent_id)
         if action == "send":
-            return executive.cli.call(store.host(host_id), "send", "--no-wait", agent_id, "--", required(args.get("prompt"), "prompt"))
+            return executive.send(host_id, agent_id, required(args.get("prompt"), "prompt"))
+    elif name == "paseo_worker_details":
+        return executive.details(**args)
     elif name == "paseo_permissions":
         return {"permissions": executive.permissions(args["host_id"])}
     elif name == "paseo_decide_permission":
