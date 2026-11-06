@@ -1,4 +1,4 @@
-"""Opt-in local smoke: a no-tools worker, real SDK snapshots, completion delivery."""
+"""Opt-in local smoke: a shell worker, real SDK snapshots, and completion tool results."""
 import json
 import selectors
 import subprocess
@@ -37,13 +37,19 @@ def main():
                     store.observe('local',frame['agent'])
                 if frame['type']=='ready' and not ready:
                     ready=True
-                    worker=executive.spawn('local','Reply exactly PASEO_EXECUTIVE_SMOKE_OK. Do not call tools, read or modify files, or spawn other agents.',
+                    worker=executive.spawn('local','Run printf to print PASEO_TOOL_RESULT_OK, then reply PASEO_EXECUTIVE_SMOKE_OK. Do not modify files or spawn other agents.',
                                            str(Path.cwd()),'codex',title='Paseo Executive plugin smoke test')['agent']['id']
                     print(json.dumps({'sdk_subscription_ready':True,'spawned_worker':worker}),flush=True)
                 events=[e for e in store.events() if e['agent']==worker and e['kind'] in {'completed','failed'}]
-                if events:
+                # Paseo may briefly report idle during worker startup. Wait for
+                # the terminal event containing the requested shell result.
+                if events and events[-1]['result'].get('tool_results'):
                     print(json.dumps({'observed_snapshots':observed,'worker_event':events[-1]}),flush=True)
                     assert events[-1]['kind']=='completed'
+                    tools=events[-1]['result']['tool_results']
+                    assert any(item.get('detail',{}).get('output','').strip()=='PASEO_TOOL_RESULT_OK'
+                               and item['detail'].get('exitCode')==0 for item in tools), tools
+                    assert 'PASEO_EXECUTIVE_SMOKE_OK' in events[-1]['result'].get('response','')
                     return worker
             raise RuntimeError(f'Smoke timed out: sdk_ready={ready}, worker={worker}, snapshots={observed}')
         finally:

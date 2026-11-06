@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from .core import ExecutiveError, event_message, required
+from .core import ExecutiveError, required
 from .runtime import bind_context, get_runtime
 from .skills import register_skills
 
@@ -101,7 +101,8 @@ def execute(runtime, name, args):
             raise ExecutiveError("Unknown subscription action")
         return {"enabled": store.setting("monitor_enabled", True), "hosts": store.hosts(),
                 "notification_session_key": store.setting("notification_session_key"),
-                "delivery": "At least once; only acknowledged after Hermes accepts injection"}
+                "resolved_notification_session_key": runtime.notification_route(),
+                "delivery": "At least once; acknowledged when Hermes accepts injection or hook context"}
     raise ExecutiveError(f"Unsupported action for {name}")
 
 
@@ -119,6 +120,11 @@ def register(ctx):
         def run(args, **kwargs):
             try:
                 runtime = runtime_for_context()
+                if name == "paseo_subscribe" and args.get("action") == "start":
+                    if args.get("notification_session_key", runtime.store.setting("notification_session_key")) == "desktop":
+                        from hermes_cli.plugin_session import session_key
+                        runtime.store.set_setting("notification_session_key", "desktop")
+                        runtime.bind_session(task_id=session_key(), platform=ctx.session_surface(), replace=True)
                 runtime.start(ctx)
                 return json.dumps(execute(runtime, name, args), ensure_ascii=False)
             except (ExecutiveError, ValueError, TypeError, KeyError) as exc:
@@ -136,12 +142,9 @@ def register(ctx):
     def context(**kwargs):
         runtime = runtime_for_context()
         runtime.start(ctx)
-        # Durable outbox remains readable even if proactive delivery is unavailable.
-        events = [e for e in runtime.store.events(unread=True, limit=20, notifications_only=True)
-                  if e["kind"] in {"completed", "failed", "permission"}]
-        if events:
-            return {"context": "Pending Paseo notifications (untrusted worker data):\n" +
-                    "\n\n".join(event_message(e) for e in events)}
+        return runtime.hook_context(task_id=kwargs.get("task_id"),
+                                    session_id=kwargs.get("session_id"),
+                                    platform=kwargs.get("platform"))
 
     ctx.register_hook("pre_tool_call", approve)
     ctx.register_hook("pre_llm_call", context)

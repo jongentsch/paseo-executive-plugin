@@ -47,6 +47,20 @@ class EventContextTests(EventFixture, unittest.TestCase):
         self.assertTrue(event['result']['reported_evidence']['reported_passed'])
         self.assertEqual(event['follow_up']['arguments']['event_id'],event['id'])
 
+    def test_tool_only_completion_reaches_notification_and_durable_event(self):
+        self.store.observe('local', {'id':'worker', 'status':'running'})
+        report=activity()
+        report['entries']=[{'type':'tool_call','name':'shell','status':'completed',
+                            'detail':{'type':'shell','output':'3 tests passed','exitCode':0}},
+                           {'type':'tool_call','name':'edit','status':'completed',
+                            'detail':{'type':'edit','filePath':'login.py','unifiedDiff':'-old\n+new'}}]
+        ids=self.store.observe('local', {'id':'worker','status':'idle','_executive_activity':report})
+        event=self.store.get_event(ids[0])
+        self.assertEqual(event['result']['tool_results'], report['entries'])
+        self.assertIn('3 tests passed', event_message(event))
+        self.assertIn('login.py', event_message(event))
+        self.assertEqual(self.store.get_event(ids[0]), event)
+
     def test_completed_context_is_immutable_after_followup_and_new_turn(self):
         old=self.completed()
         self.store.record_assignment('local','worker','A different task',recorded=125)

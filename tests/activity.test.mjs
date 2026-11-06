@@ -7,10 +7,12 @@ function client(page){return {agents:{ref(){return {timeline:{refetch:async opti
 test('timeline projection preserves worker replies and excludes private tool inputs and reasoning',async()=>{
   const api=client({agent:{updatedAt:'v1'},entries:[
     {item:{type:'reasoning',text:'private reasoning'},turnId:'t1'},
-    {item:{type:'tool_call',name:'shell',status:'completed',input:{token:'secret-input'},output:'full output'},turnId:'t1'},
+    {item:{type:'tool_call',name:'shell',status:'completed',input:{token:'secret-input'},detail:{type:'shell',command:'secret-input',output:'full output',exitCode:0}},turnId:'t1'},
     {item:{type:'assistant_message',text:'Old reply'},turnId:'t0'},
     {item:{type:'assistant_message',text:'The result'},turnId:'t1'}]});
   const activity=await readActivity(api,'worker',{turnId:'t1',updatedAt:'v1'});
+  assert.equal(activity.entries[0].detail.output,'full output');
+  assert.equal(activity.entries[0].detail.exitCode,0);
   assert.equal(activity.scope,'turn');
   assert.equal(activity.entries.at(-1).text,'The result');
   assert.ok(!JSON.stringify(activity).includes('secret-input'));
@@ -59,4 +61,33 @@ test('queued snapshots capture values before callers can mutate them',async()=>{
   await queued;
   assert.equal(output[0].agent.status,'running');
   assert.equal(output[0].agent.activeTurn.turnId,'t1');
+});
+
+test('file changes and unknown results survive without exposing raw inputs',async()=>{
+  const activity=await readActivity(client({entries:[
+    {item:{type:'tool_call',name:'edit',status:'completed',detail:{type:'edit',filePath:'a.py',unifiedDiff:'-old\n+new'}}},
+    {item:{type:'tool_call',name:'custom',status:'completed',detail:{type:'unknown',input:'secret-input',output:{ok:true}}}}
+  ]}),'worker');
+  assert.equal(activity.entries[0].detail.unifiedDiff,'-old\n+new');
+  assert.deepEqual(activity.entries[1].detail.output,{ok:true});
+  assert.ok(!JSON.stringify(activity).includes('secret-input'));
+});
+
+test('large tool results are bounded',async()=>{
+  const activity=await readActivity(client({entries:Array.from({length:20},()=>({item:{type:'tool_call',detail:{type:'shell',output:'x'.repeat(20000)}}}))}),'worker');
+  assert.ok(activity.truncated);
+  assert.ok(activity.entries.reduce((n,e)=>n+(e.detail?.output?.length||0),0)<=12000);
+});
+
+test('completion snapshot carries canonical tool results into the Python boundary',async()=>{
+  const frames=[];
+  const emit=snapshotEmitter(client({entries:[
+    {turnId:'t1',item:{type:'tool_call',callId:'call-1',name:'shell',status:'completed',
+      detail:{type:'shell',output:'tests passed',exitCode:0}}}
+  ]}),frame=>frames.push(frame));
+  await emit({id:'worker',status:'running',activeTurn:{turnId:'t1'}});
+  await emit({id:'worker',status:'idle'});
+  const tool=frames[1].agent._executive_activity.entries[0];
+  assert.equal(tool.call_id,'call-1');
+  assert.deepEqual(tool.detail,{type:'shell',output:'tests passed',exitCode:0});
 });

@@ -38,11 +38,16 @@ def report_from_activity(activity):
         result["unavailable_reason"] = clipped(activity["error"], 500)
         return result
     entries = activity.get("entries") or []
+    tools = [entry for entry in entries if entry.get("type") == "tool_call"]
+    if tools:
+        result["tool_results"], tool_truncated = bounded(tools, budget=MAX_REPORT)
+        result["truncated"] = result["truncated"] or tool_truncated
     messages = [entry for entry in entries if entry.get("type") == "assistant_message" and entry.get("text")]
     text = messages[-1]["text"] if messages else activity.get("text")
     if not text:
         result["unavailable_reason"] = "No assistant response in the bounded activity window"
         return result
+    result["response"] = clipped(text, MAX_REPORT)
     result.update(summary=clipped(text), attribution="worker_reported" if messages else "unclassified_activity",
                   truncated=result["truncated"] or len(text) > MAX_SUMMARY)
     if messages:

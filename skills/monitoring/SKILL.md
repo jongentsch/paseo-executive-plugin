@@ -33,9 +33,17 @@ Events include captured `context`, an available bounded `result`, and a `follow_
 
 Read current worker state on the same host when event history is incomplete. Never repeat a spawn, send, or permission decision just to regenerate a missing notification.
 
+## Deliver background events via cron polling
+
+When SDK-based event delivery captures events but they never reach the agent's conversation, use a `--no-agent` cron job with `--deliver bot-chat:default` to poll and deliver: idle triggers a new turn, mid-turn queues delivery. Track last-delivered event ID in cron notepad for dedup. See [references/cron-event-polling.md](references/cron-event-polling.md).
+
 ## Distinguish capture from delivery
 
 If an expected event is absent, check the relevant host's monitoring, last health, current worker state, and transport limitations first. Use `paseo-executive:hosts` for connection troubleshooting. An absent event alone is not proof that the worker is still running or that it failed.
+
+**Plugin source changes require a reload to take effect.** After a worker patches plugin files on disk, the running gateway still uses the old in-memory code. Reload with `hermes plugins disable <name>` followed by `hermes plugins enable <name>`. Hooks activate immediately; tools activate on the next session. Without the reload, event delivery fixes, new hooks, and updated logic are silently inert.
+
+**Never claim a worker's status without verifying.** Before asserting a worker's state, run `paseo ls -a -g --json` or `paseo_events`. False claims about worker states erode trust and cause the user to double-check what should be automatic. If you cannot verify a state, say so — do not infer it.
 
 If the event exists but no notification arrived, inspect unread events and the delivery route. Only completion, failure, and permission events are proactively delivered. `spawned` and `permission_resolved` audit records may remain marked undelivered; do not treat that as a notification failure. Reading an event does not acknowledge it, and the tools expose no manual acknowledge/requeue/delete operation.
 
@@ -50,3 +58,5 @@ Notifications are delivered at least once. A crash after Hermes accepts an event
 To pause observation for the fleet, use `paseo_subscribe` with `action: stop`; for one host, update its `enabled` value through `paseo_hosts`. These actions do not stop coding workers, erase history, revoke a notification route, or necessarily stop delivery of events already in the outbox. Resume observation explicitly when requested. Do not clear plugin data, restart Hermes, or recreate workers as a notification repair shortcut.
 
 After a bounded diagnostic pass, report the affected host/worker, last event/cursor and health time, whether the issue is capture or delivery, available evidence, and the specific remaining blocker. Avoid repeated retries without new evidence.
+
+**Cleaning idle workers:** `paseo stop` is a no-op for idle agents (it only interrupts running ones). To hard-delete idle agents, use `paseo delete <id>`. This is the only way to remove completed test workers from the idle pool.

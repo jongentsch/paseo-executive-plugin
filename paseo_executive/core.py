@@ -345,7 +345,7 @@ class Store:
     def delivered(self, event_id, success):
         with self.db() as db:
             db.execute("UPDATE events SET delivered=?,claimed_until=? WHERE id=?",
-                       (int(success), 0 if success else time.time() + 20, event_id))
+                       (int(success), 0, event_id))
 
 
 class PaseoCLI:

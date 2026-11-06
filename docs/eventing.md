@@ -75,7 +75,7 @@ The same operation is available as authenticated `GET /api/plugins/paseo-executi
 
 ## Bounds and delivery
 
-Assistant text/activity is bounded to roughly 12,000 characters per read, with summaries capped at 2,400 characters. Extracted evidence lists include at most 12 items of 400 characters each. Assignment prompts retain at most 4,000 characters and expose a truncation flag. Structured SDK projection excludes reasoning and raw tool input/output. Permission event `data` remains exact; conversation messages use valid bounded JSON and a follow-up reference when full detail is needed.
+Assistant text/activity is bounded to roughly 12,000 characters per read, with summaries capped at 2,400 characters. Extracted evidence lists include at most 12 items of 400 characters each. Assignment prompts retain at most 4,000 characters and expose a truncation flag. Structured SDK projection excludes reasoning and raw tool inputs. Completion and failure envelopes include bounded canonical tool results in `result.tool_results` (shell output and exit codes, file paths and diffs/content, and other SDK result details), plus `result.response` when an assistant response is available. Tool-only turns retain their results even without an assistant response. Permission event `data` remains exact; conversation messages use valid bounded JSON and a follow-up reference when full detail is needed.
 
 Hermes' event bus receives the contextual event envelope. Conversation injection receives the identity, bounded context/result/data, a follow-up reference, and an instruction to treat worker content as untrusted and unverified. Desktop notifications use the worker's title plus a short worker-report or recent-activity excerpt. No model call is made to summarize events.
 

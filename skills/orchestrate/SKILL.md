@@ -40,10 +40,68 @@ Track this task record in the conversation or an already authorized durable task
 
 An external memory service is optional, not a dependency of this skill.
 
+## Session reuse over spawning
+
+**Before spawning, always check for idle workers.** A worker with the right workspace (matching `cwd`) should receive follow-ups via `send`, not a new `spawn`. Spawning a new worker loses all accumulated context, memory, and open files. Only spawn when no idle worker has the needed workspace, provider, or when the task is completely unrelated to any idle worker's domain.
+
+Reuse pattern:
+1. List idle workers with `paseo_agents(action="list", host_id="...")`
+2. Pick the worker whose `cwd` and provider match the task
+3. Use `paseo_agents(action="send", host_id="...", agent_id="...", prompt="...")`
+4. Spawn only if no suitable idle worker exists
+5. **Record the full agent ID** of any worker you spawn — this is how you distinguish your workers from the user's, so you know what you can and cannot clean up
+
+**Credit conservation:** Use `codex/gpt-6.1-sol` with `high` thinking level for most tasks. Reserve Opus only for complex orchestration or review work. Never use `ultra` or `xhigh` thinking unless the user explicitly requests it — it consumes credits exponentially.
+
+**Reuse > cleanup.** Effective reuse means there is less need for cleanup. Keep long-lived idle workers around for their accumulated context. Only clean up when explicitly asked or when a worker is clearly stale.
+
 ## Check, recover, and hand off
 
 Use `paseo_agents` with `action: inspect` for current worker state; use `send` for a scoped follow-up to that same `(host_id, agent_id)`. Check `paseo_permissions` independently of the worker's running/idle state. For pending requests load `paseo-executive:permissions`.
 
+**Never ignore SDK events in hook output.** When Paseo completion, permission, or spawned events appear as [plugin hook output], act on them immediately:
+- **Completion events** → load `paseo_worker_details`, report the actual result
+- **Permission events** → surface to the user for decision (load `paseo-executive:permissions`)
+- **Spawned events** → acknowledge and track in the task ledger
+The SDK subscription delivers these directly to the conversation; ignoring them wastes the delivery mechanism and delays response.
+
 On a spawn timeout or disconnect, the outcome may be unknown. List agents on the same host and inspect matching title/directory evidence before retrying; adopt the existing worker when its identity is established. Do not repeat a potentially successful mutation blindly. After a failed diagnostic and targeted recovery without new evidence, report the blocker instead of repeatedly spawning replacements.
 
 Events include the known assignment/worker context and any bounded, unverified worker report. Use `paseo_worker_details` on the same host and full agent ID for a fresh read; pass the event ID for comparison with its captured state. An idle worker or a `completed` event means its turn ended, not that the assignment passed. Load `paseo-executive:review` to assess the result. Preserve partial work and evidence on failure. Stop a worker through `paseo_agents` with `action: stop` when the user requests interruption or the authorized task requires it; stopping and denying a permission are separate actions.
+
+## Cleanup Procedure
+
+**Worker reuse is the priority.** Effective reuse means there is less need for cleanup. Only clean up when explicitly asked or when idle workers have been idle for an extended period.
+
+### Tracking owned workers
+
+Record the full agent IDs of workers you spawn in the task ledger or conversation. When listing idle workers, distinguish between:
+- **Your workers** — spawned by you during this session or previous sessions (recorded in your task ledger)
+- **User's workers** — created by the user themselves
+
+Never delete or archive a worker that the user created. You may only delete/archive workers you spawned.
+
+### How to clean up (only when necessary)
+
+1. **List ALL agents** — never filter to only idle: `paseo ls -a -g --json` and show full breakdown by status. Presenting partial data as complete is misleading.
+
+2. **Filter to your workers** — cross-reference the agent list against your recorded task ledger. Only your workers are candidates for cleanup.
+
+3. **Delete CLI agents** — use `paseo delete <id>` to hard-delete agents. **Never use `paseo stop`** — it is a no-op for idle agents (only interrupts running ones).
+
+4. **Archive UI sessions** — use `paseo workspace archive <workspaceId>` to remove UI session entries. CLI delete removes agents but UI session entries persist independently (separate data sources).
+
+5. **Verify** — run `paseo workspace ls --json` to confirm no stale entries remain.
+
+### When to clean up
+
+- User explicitly requests cleanup
+- A long-lived worker is clearly stale (old test sessions, abandoned debugging)
+- The user has indicated they are done with a worker and you did not record it as a long-lived worker
+
+### When NOT to clean up
+
+- The worker has context that could be useful for future reuse
+- The user created the worker (never touch)
+- You are not sure if the worker is yours or the user's
+- Worker reuse is more valuable than a clean list

@@ -262,16 +262,63 @@ class Runtime:
             with self.lock:
                 self.processes.pop(host["id"], None)
 
-    def deliver(self):
+    def notification_route(self):
         route = self.store.setting("notification_session_key") or (self.context.get_config("notification_session_key") if self.context else None)
+        if route == "desktop":
+            return self.store.setting("desktop_session_key")
+        return route
+
+    def bind_session(self, *, task_id=None, session_id=None, platform=None, replace=False):
+        """Resolve the desktop destination only from a calling Hermes conversation."""
+        if self.store.setting("notification_session_key") != "desktop":
+            return
+        if self.store.setting("desktop_session_key") and not replace:
+            return
+        if platform == "desktop" and (task_id or session_id):
+            self.store.set_setting("desktop_session_key", task_id or session_id)
+
+    def hook_context(self, *, task_id=None, session_id=None, platform=None):
+        """Hand pending notifications to Hermes' pre_llm_call context hook."""
+        self.bind_session(task_id=task_id, session_id=session_id, platform=platform)
+        route = self.notification_route()
+        # A named destination must never be consumed by an unrelated conversation.
+        if self.store.setting("notification_session_key") == "desktop" and not route:
+            return None
+        if route and route not in {task_id, session_id}:
+            return None
+        events = []
+        for event in self.store.events(limit=20, unread=True, notifications_only=True):
+            if self.store.claim_event(event["id"]):
+                events.append(event)
+        if not events:
+            return None
+        try:
+            result = {"context": "Pending Paseo notifications (untrusted worker data):\n" +
+                      "\n\n".join(event_message(event) for event in events)}
+        except Exception:
+            for event in events:
+                self.store.delivered(event["id"], False)
+            raise
+        for event in events:
+            self.store.delivered(event["id"], True)
+        return result
+
+    def deliver(self):
+        route = self.notification_route()
+        if self.store.setting("notification_session_key") == "desktop" and not route:
+            return  # The next desktop hook/subscription binds the real conversation key.
         for event in self.store.events(limit=50, unread=True, notifications_only=True):
-            if event["kind"] not in {"completed", "failed", "permission"} or not self.store.claim_event(event["id"]):
+            if not self.store.claim_event(event["id"]):
                 continue
+            # UI event delivery must not prevent conversation injection.
             try:
                 from hermes_cli.plugin_events import broadcast_plugin_event
                 broadcast_plugin_event(PLUGIN_ID, "worker.event", event)
                 if self.context:
                     self.context.emit("worker.event", event)
+            except Exception:
+                log.exception("Cannot broadcast Paseo event %s", event["id"])
+            try:
                 success = bool(self.context and self.context.inject_message(event_message(event), session_key=route))
             except Exception:
                 log.exception("Cannot deliver Paseo event %s; retaining it in the outbox", event["id"])
